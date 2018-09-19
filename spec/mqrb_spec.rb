@@ -1,6 +1,6 @@
-RSpec.describe Mqrb::Cli do
+RSpec.describe Mqrb do
   it "has a version number" do
-    expect(Mqrb::Cli::VERSION).not_to be nil
+    expect(Mqrb::VERSION).not_to be nil
   end
 
   it "does something useful" do

@@ -1,5 +1,5 @@
 require "bundler/setup"
-require "mqrb/cli"
+require "mqrb"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

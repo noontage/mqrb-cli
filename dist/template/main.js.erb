@@ -1,0 +1,8 @@
+Mqrb.onRuntimeInitialized = function () {
+  var mrb = Mqrb.createInstance();
+  fetch("<%= @@app[:bundle_rb]%>").then(function (response) {
+    response.text().then(function (script) {
+      Mqrb.execScript(mrb, script);
+    });
+  });
+}

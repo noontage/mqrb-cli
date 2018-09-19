@@ -6,6 +6,10 @@
 /pkg/
 /spec/reports/
 /tmp/
+/vendor/
+/public/
 
 # rspec failure tracking
 .rspec_status
+
+.vscode
