@@ -17,10 +17,16 @@ module Mqrb
     package_name "mqrb-cli"
 
     # = create-app
-    desc "create-app [project-directory]", "Create new Monocoque Ruby apps."
+    desc "create-app [project-directory]", "Create new Monocoque-Ruby apps."
+    method_option "no-compiler", desc: "Use that Monocoque-Ruby runtimes was built without Ruby Compiler."
 
     def create_app(dir_pj)
-      Mqrb::create_new_app(dir_pj)
+      # check options
+      opt = {}
+      if options.has_key?("no-compiler")
+        opt["no-compiler"] = true
+      end
+      Mqrb::create_new_app(dir_pj, opt)
     end
 
     # = version
@@ -62,7 +68,7 @@ module Mqrb
   end
 
   # = create_new_app
-  def self.create_new_app(dir_pj)
+  def self.create_new_app(dir_pj, opt)
     # check project name
     if Dir.exist? dir_pj # exist?
       puts "already exist #{dir_pj} directory."
@@ -95,6 +101,9 @@ module Mqrb
     cp @@template[:bundle_rb], "#{@@app[:dir_pj]}/bundle.rb"
 
     # copy mqrb-library
+    if (opt.has_key?("no-compiler"))
+      @@app[:dir_library] = "dist/mqrb"
+    end
     cp @@template[:mqrb_main], "#{@@app[:dir_pj]}/mqrb/mqrb.js"
     cp_r "#{@@app[:dir_library]}/asm", "#{@@app[:dir_pj]}/mqrb/"
     cp_r "#{@@app[:dir_library]}/wasm", "#{@@app[:dir_pj]}/mqrb/"
