@@ -1,0 +1,9 @@
+Mqrb.onRuntimeInitialized = function () {
+  var mrb = Mqrb.createInstance();
+  fetch('bundle.mrb')
+    .then(responce => responce.arrayBuffer())
+    .then(buffer => new Uint8Array(buffer))
+    .then(mrbByteCode => {
+      Mqrb.execIrep(mrb, mrbByteCode);
+    });
+}

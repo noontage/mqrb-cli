@@ -4,56 +4,56 @@ require "fileutils"
 require "erb"
 
 module Mqrb
-  @@app = {
-    name: "MyApp",
-    dir_pj: "myapp",
-    dir_template: "dist/template",
-    dir_library: "dist/mqrb-with-compiler",
-    bundle_rb: "bundle.rb",
-  }
-  @@template = {}
+  @@config = Config.new
 
   class Cli < Thor
     package_name "mqrb-cli"
 
+    #
     # = create-app
+    #
     desc "create-app [project-directory]", "Create new Monocoque-Ruby apps."
-    method_option "no-compiler", desc: "Use that Monocoque-Ruby runtimes was built without Ruby Compiler."
+    method_option "runtime-dir", {desc: "Set Monocoque-ruby runtime path.", default: ""}
+    method_option "runtime", {desc: "Set Monocoque-ruby runtime name.", default: "mqrb"}
 
     def create_app(dir_pj)
-      # check options
-      opt = {}
-      if options.has_key?("no-compiler")
-        opt["no-compiler"] = true
-      end
-      Mqrb::create_new_app(dir_pj, opt)
+      Mqrb::create_new_app(dir_pj, options)
     end
 
+    #
     # = version
+    #
     desc "version", "Show mqrb-cli versions."
 
     def version
+      print "mqrb-cli: "
       puts VERSION
     end
   end
 
   private
 
+  # = mkdir
+  def self.mkdir(dir)
+    puts "[MKDIR]: #{dir}"
+    Dir.mkdir dir
+  end
+
   # = cp
   def self.cp(src, dst)
-    puts "[COPY] => #{dst}"
+    puts "[COPY]: #{File.basename(src)} => #{dst}"
     FileUtils.cp src, dst
   end
 
   # = cp_r
   def self.cp_r(src, dst)
-    puts "[COPY] => #{dst}"
+    puts "[COPY]: #{File.basename(src)} => #{dst}"
     FileUtils.cp_r src, dst
   end
 
   # = cp_erb
   def self.cp_erb(src, dst)
-    puts "[COPY] => #{dst}"
+    puts "[ERB]: #{File.basename(src)} => #{dst}"
     File.open(src) do |f|
       erb = ERB.new(f.read)
       File.open(dst, "w") do |f|
@@ -71,43 +71,46 @@ module Mqrb
   def self.create_new_app(dir_pj, opt)
     # check project name
     if Dir.exist? dir_pj # exist?
-      puts "already exist #{dir_pj} directory."
+      puts "[ERROR] already exist #{dir_pj} directory."
       return
     elsif (dir_pj !~ /\A(\w|-)+\z/) # valid?
-      puts "invalid project name. please use charactor '[A-Z][a-z][0-9]_-'"
+      puts "[ERROR] invalid project name. please use charactor '[A-Z][a-z][0-9]_-'"
       return
-    else
-      @@app[:dir_pj] = dir_pj
     end
 
-    # set default souce template
-    @@template[:index] = "#{@@app[:dir_template]}/index.html.erb" unless @@template[:index]
-    @@template[:main_js] = "#{@@app[:dir_template]}/main.js.erb" unless @@template[:main_js]
-    @@template[:bundle_rb] = "#{@@app[:dir_template]}/bundle.rb" unless @@template[:bundle_rb]
-    @@template[:mqrb_main] = "#{@@app[:dir_template]}/mqrb.js" unless @@template[:mqrb_main]
+    # set default config
+    @@config.dir_pj = dir_pj
+    @@config.dir_dist = File.expand_path("../..", __dir__) + "/dist"
+    @@config.dir_runtime = opt["runtime-dir"].empty? ? "#{@@config.dir_dist}/runtime" : opt["runtime-dir"]
+    @@config.runtime = opt["runtime"].empty? ? "mqrb" : opt["runtime"]
+    @@config.loader = "#{@@config.dir_dist}/loader/mqrb.js"
+
+    # check params
+    raise "No such runtime directory #{@@config.dir_runtime}" unless Dir.exist?(@@config.dir_runtime)
+    raise "No such runtime directory #{@@config.dir_runtime}/#{@@config.runtime}" unless Dir.exist?(@@config.dir_runtime + "/" + @@config.runtime)
 
     # input app name
     print "Full App Name: (MyApp) "
-    @@app[:name] = STDIN.gets.chomp
-    @@app[:name] = "MyApp" if (@@app[:name].empty?)
+    @@config.name = STDIN.gets.chomp
+    @@config.name = "MyApp" if (@@config.name.empty?)
 
-    # create directory
-    Dir.mkdir @@app[:dir_pj]
-    Dir.mkdir "#{@@app[:dir_pj]}/mqrb"
+    # === install ==
 
-    # make index.html, main.js, bundle.rb
-    cp_erb @@template[:index], "#{@@app[:dir_pj]}/index.html"
-    cp_erb @@template[:main_js], "#{@@app[:dir_pj]}/main.js"
-    cp @@template[:bundle_rb], "#{@@app[:dir_pj]}/bundle.rb"
+    # copy template
+    cp_r "#{@@config.dir_runtime}/#{@@config.runtime}/template", @@config.dir_pj
+    Dir.glob("#{@@config.dir_pj}/**/*.erb").each do |f|
+      cp_erb f, "#{@@config.dir_pj}/#{File.basename(f, ".erb")}"
+      FileUtils.rm f
+    end
+
+    # copy loader
+    mkdir "#{@@config.dir_pj}/mqrb"
+    cp @@config.loader, "#{@@config.dir_pj}/mqrb/mqrb.js"
 
     # copy mqrb-library
-    if (opt.has_key?("no-compiler"))
-      @@app[:dir_library] = "dist/mqrb"
-    end
-    cp @@template[:mqrb_main], "#{@@app[:dir_pj]}/mqrb/mqrb.js"
-    cp_r "#{@@app[:dir_library]}/asm", "#{@@app[:dir_pj]}/mqrb/"
-    cp_r "#{@@app[:dir_library]}/wasm", "#{@@app[:dir_pj]}/mqrb/"
+    cp_r "#{@@config.dir_runtime}/#{@@config.runtime}/asm", "#{@@config.dir_pj}/mqrb/"
+    cp_r "#{@@config.dir_runtime}/#{@@config.runtime}/wasm", "#{@@config.dir_pj}/mqrb/"
 
-    puts "[Success] Created #{@@app[:name]} Project to #{@@app[:dir_pj]}"
+    puts "[Success] Created #{@@config.name} Project to #{@@config.dir_pj}"
   end
 end

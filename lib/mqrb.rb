@@ -1,4 +1,5 @@
 require "mqrb/version"
+require "mqrb/config"
 require "mqrb/cli"
 
 module Mqrb

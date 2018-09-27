@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    mqrb (0.1.0)
+    mqrb (0.1.1)
       thor
 
 GEM
